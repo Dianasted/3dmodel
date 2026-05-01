@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <title>3D model zgrade po mjerama</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+    #ui {
+      width: 300px;
+      padding: 20px;
+      box-sizing: border-box;
+      background: #f5f5f5;
+      border-right: 1px solid #ddd;
+    }
+    #canvas-container {
+      flex: 1;
+      background: #222;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 8px 12px;
+      width: 100%;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+<div id="ui">
+  <h3>3D model zgrade</h3>
+
+  <label>Širina (m):</label>
+  <input id="width" type="number" value="10" min="1" step="0.1">
+
+  <label>Dužina (m):</label>
+  <input id="length" type="number" value="20" min="1" step="0.1">
+
+  <label>Visina (m):</label>
+  <input id="height" type="number" value="5" min="1" step="0.1">
+
+  <label>Cijena po m² (EUR):</label>
+  <input id="pricePerM2" type="number" value="120" min="1" step="1">
+
+  <button onclick="updateModel()">Prikaži model</button>
+
+  <hr>
+
+  <h4>Rezultati:</h4>
+  <p><b>Tlocrtna površina:</b> <span id="area">-</span> m²</p>
+  <p><b>Volumen:</b> <span id="volume">-</span> m³</p>
+  <p><b>Procijenjena cijena:</b> <span id="price">-</span> EUR</p>
+</div>
+
+<div id="canvas-container"></div>
+
+<!-- Three.js CDN -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+  let scene, camera, renderer, box, controls;
+
+  function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222222);
+
+    camera = new THREE.PerspectiveCamera(
+      60,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(30, 30, 30);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth - 300, window.innerHeight);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(50, 50, 50);
+    scene.add(light);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambient);
+
+    const grid = new THREE.GridHelper(100, 20);
+    scene.add(grid);
+
+    updateModel();
+
+    window.addEventListener('resize', onWindowResize);
+
+    animate();
+  }
+
+  function onWindowResize() {
+    const width = window.innerWidth - 300;
+    const height = window.innerHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  }
+
+  function updateModel() {
+    const w = parseFloat(document.getElementById('width').value);
+    const l = parseFloat(document.getElementById('length').value);
+    const h = parseFloat(document.getElementById('height').value);
+    const pricePerM2 = parseFloat(document.getElementById('pricePerM2').value);
+
+    if (box) scene.remove(box);
+
+    const geometry = new THREE.BoxGeometry(w, h, l);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x6699ff,
+      metalness: 0.1,
+      roughness: 0.6
+    });
+
+    box = new THREE.Mesh(geometry, material);
+    box.position.y = h / 2;
+    scene.add(box);
+
+    const area = w * l;
+    const volume = w * l * h;
+    const price = area * pricePerM2;
+
+    document.getElementById('area').textContent = area.toFixed(2);
+    document.getElementById('volume').textContent = volume.toFixed(2);
+    document.getElementById('price').textContent = price.toFixed(2);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+
+  init();
+</script>
+
+</body>
+</html>
